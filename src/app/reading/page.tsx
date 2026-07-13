@@ -360,6 +360,7 @@ function ReadingPageInner() {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [upsellMsg, setUpsellMsg] = useState<string | null>(null)
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0)
+  const [readyPhase, setReadyPhase] = useState(false)
 
   const READING_LOADING_MESSAGES = [
     t('reading.loading_msg1'),
@@ -392,6 +393,7 @@ function ReadingPageInner() {
     setImgErrors(Array(spread.cards).fill(false))
     setReadingText('')
     setIsGenerating(false)
+    setReadyPhase(true)
   }
 
   // moon / URL param 初期化
@@ -639,6 +641,107 @@ function ReadingPageInner() {
         {/* ── リーディングセッション ── */}
         {selectedSpread && (
           <>
+            {/* ━━ 準備フェーズ ━━ */}
+            {readyPhase && (
+              <div style={{
+                textAlign: 'center',
+                padding: '56px 24px',
+                maxWidth: '480px',
+                margin: '0 auto',
+                animation: 'fadeIn 0.5s ease',
+              }}>
+                {/* 月アニメーション */}
+                <div style={{
+                  fontSize: '52px',
+                  marginBottom: '28px',
+                  display: 'inline-block',
+                  animation: 'moonPulse 3s ease-in-out infinite',
+                }}>
+                  {moon?.phaseEmoji ?? '\u{1F319}'}
+                </div>
+
+                {/* 儀式テキスト */}
+                <h2 style={{
+                  fontFamily: C.serif,
+                  fontSize: '22px',
+                  color: C.gold,
+                  marginBottom: '16px',
+                  lineHeight: 1.6,
+                  fontWeight: 300,
+                  letterSpacing: '0.06em',
+                }}>
+                  {isZhTW ? '\u8acb\u975c\u4e0b\u5fc3\u4f86' : '\u5fc3\u3092\u9759\u3081\u3066\u304f\u3060\u3055\u3044'}
+                </h2>
+
+                <p style={{
+                  fontFamily: C.sans,
+                  fontSize: '14px',
+                  color: C.goldMt,
+                  lineHeight: 2,
+                  marginBottom: '36px',
+                  whiteSpace: 'pre-line',
+                }}>
+                  {isZhTW
+                    ? '\u8acb\u5728\u5fc3\u4e2d\u9ed8\u60f3\u4f60\u60f3\u5360\u535c\u7684\u554f\u984c\u3002\n\u6df1\u547c\u5438\u4e09\u6b21\uff0c\u611f\u53d7\u6708\u4eae\u7684\u80fd\u91cf\u6d41\u5165\u4f60\u7684\u5167\u5fc3\u3002\n\u6e96\u5099\u597d\u5f8c\uff0c\u8acb\u7ffb\u958b\u724c\u5361\u3002'
+                    : '\u5fc3\u306e\u4e2d\u3067\u3001\u5360\u3044\u305f\u3044\u3053\u3068\u3092\u3086\u3063\u304f\u308a\u601d\u3044\u6d6e\u304b\u3079\u3066\u304f\u3060\u3055\u3044\u3002\n\u6df1\u547c\u5438\u30923\u56de\u3057\u3066\u3001\u6708\u306e\u30a8\u30cd\u30eb\u30ae\u30fc\u3092\u611f\u3058\u3066\u304f\u3060\u3055\u3044\u3002\n\u6e96\u5099\u304c\u3067\u304d\u305f\u3089\u3001\u30ab\u30fc\u30c9\u3092\u3081\u304f\u308a\u307e\u3057\u3087\u3046\u3002'
+                  }
+                </p>
+
+                {/* スプレッド名 */}
+                <div style={{
+                  fontFamily: C.sans,
+                  fontSize: '10px',
+                  color: C.goldDim,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  marginBottom: '8px',
+                }}>
+                  {selectedSpread.nameEn}
+                </div>
+                <div style={{
+                  fontFamily: C.serif,
+                  fontSize: '16px',
+                  color: '#c8b88a',
+                  marginBottom: '40px',
+                  letterSpacing: '0.05em',
+                }}>
+                  {selectedSpread.name}
+                </div>
+
+                {/* 準備完了ボタン */}
+                <button
+                  onClick={() => setReadyPhase(false)}
+                  style={{
+                    padding: '14px 44px',
+                    background: 'transparent',
+                    border: '0.5px solid rgba(196,160,96,0.45)',
+                    borderRadius: '99px',
+                    color: C.gold,
+                    fontSize: '14px',
+                    fontFamily: C.serif,
+                    cursor: 'pointer',
+                    letterSpacing: '0.12em',
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(196,160,96,0.1)'
+                    e.currentTarget.style.borderColor = C.gold
+                    e.currentTarget.style.boxShadow = '0 0 20px rgba(196,160,96,0.15)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.borderColor = 'rgba(196,160,96,0.45)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  {isZhTW ? '\u2736 \u958b\u59cb\u7ffb\u724c' : '\u2736 \u30ab\u30fc\u30c9\u3092\u3081\u304f\u308b'}
+                </button>
+              </div>
+            )}
+
+            {/* ━━ カードセッション（準備完了後）━━ */}
+            {!readyPhase && (
+            <>
             {/* グランタブロー: 指導バナー */}
             {isGrandTableau && !readingText && !isGenerating && (
               <div style={{
@@ -926,6 +1029,8 @@ function ReadingPageInner() {
                 )}
               </div>
             )}
+            </>
+            )}
           </>
         )}
       </div>
@@ -934,6 +1039,14 @@ function ReadingPageInner() {
         @keyframes blink {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0; }
+        }
+        @keyframes moonPulse {
+          0%, 100% { transform: scale(1);    opacity: 1; }
+          50%       { transform: scale(1.08); opacity: 0.85; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
