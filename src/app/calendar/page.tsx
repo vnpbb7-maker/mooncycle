@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { calculateMoonPhase } from '@/lib/moon-phase'
 import { useLocale } from '@/lib/i18n'
@@ -89,6 +90,7 @@ export default function CalendarPage() {
   const [selected, setSelected] = useState<CalDay | null>(null)
   const { locale } = useLocale()
   const isZh = locale === 'zh-TW'
+  const router = useRouter()
 
   useEffect(() => {
     const now = new Date()
@@ -266,13 +268,16 @@ export default function CalendarPage() {
                   }
                 </p>
                 <div style={{ marginTop: '12px' }}>
-                  <button style={{
-                    fontFamily: C.sans, fontSize: '11px',
-                    padding: '7px 18px',
-                    background: 'rgba(196,160,96,0.1)',
-                    border: `1px solid ${C.bdrSt}`,
-                    borderRadius: '6px', color: C.gold, cursor: 'pointer',
-                  }}>
+                  <button
+                    onClick={() => router.push('/reading?spread=daily')}
+                    style={{
+                      fontFamily: C.sans, fontSize: '11px',
+                      padding: '7px 18px',
+                      background: 'rgba(196,160,96,0.1)',
+                      border: `1px solid ${C.bdrSt}`,
+                      borderRadius: '6px', color: C.gold, cursor: 'pointer',
+                    }}
+                  >
                     {isZh ? '查看當日占卜 →' : 'この日のリーディングへ →'}
                   </button>
                 </div>
