@@ -179,6 +179,61 @@ function SpreadIcon({ count }: { count: number }) {
   )
 }
 
+
+// ─── アップセルモーダル ────────────────────────────────────────────────────────
+function UpsellModal({ message, onClose }: { message: string; onClose: () => void }) {
+  const router = useRouter()
+  const { locale } = useLocale()
+  const isZh = locale === 'zh-TW'
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '24px',
+    }} onClick={onClose}>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#1e1a08', border: '1px solid rgba(196,160,96,0.4)',
+          borderRadius: '16px', padding: '32px 28px',
+          maxWidth: '400px', width: '100%', textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: '36px', marginBottom: '16px' }}>✦</div>
+        <h2 style={{ fontFamily: C.serif, fontSize: '20px', color: C.gold, marginBottom: '12px' }}>
+          {isZh ? '升級方案' : 'プランのアップグレード'}
+        </h2>
+        <p style={{ fontFamily: C.sans, fontSize: '13px', color: C.goldMt, lineHeight: 1.8, marginBottom: '24px' }}>
+          {message}
+        </p>
+        <button
+          onClick={() => router.push('/premium')}
+          style={{
+            width: '100%', padding: '13px',
+            background: C.gold, border: 'none', borderRadius: '10px',
+            color: C.bg, fontFamily: C.sans, fontSize: '13px', fontWeight: 700,
+            letterSpacing: '0.06em', cursor: 'pointer', marginBottom: '10px',
+          }}
+        >
+          {isZh ? '查看方案 →' : 'プランを見る →'}
+        </button>
+        <button
+          onClick={onClose}
+          style={{
+            width: '100%', padding: '10px',
+            background: 'transparent', border: '1px solid rgba(196,160,96,0.18)',
+            borderRadius: '10px', color: C.goldMt,
+            fontFamily: C.sans, fontSize: '12px', cursor: 'pointer',
+          }}
+        >
+          {isZh ? '關閉' : '閉じる'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── フリップカード ────────────────────────────────────────────────────────────
 function FlipCard({
   card, position, flipped, onClick, imgError, onImgError,
@@ -288,57 +343,7 @@ function FlipCard({
   )
 }
 
-// ─── アップセルモーダル ────────────────────────────────────────────────────────
-function UpsellModal({ message, onClose }: { message: string; onClose: () => void }) {
-  const router = useRouter()
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
-      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '24px',
-    }} onClick={onClose}>
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: '#1e1a08', border: '1px solid rgba(196,160,96,0.4)',
-          borderRadius: '16px', padding: '32px 28px',
-          maxWidth: '400px', width: '100%', textAlign: 'center',
-        }}
-      >
-        <div style={{ fontSize: '36px', marginBottom: '16px' }}>✦</div>
-        <h2 style={{ fontFamily: C.serif, fontSize: '20px', color: C.gold, marginBottom: '12px' }}>
-          プランのアップグレード
-        </h2>
-        <p style={{ fontFamily: C.sans, fontSize: '13px', color: C.goldMt, lineHeight: 1.8, marginBottom: '24px' }}>
-          {message}
-        </p>
-        <button
-          onClick={() => router.push('/premium')}
-          style={{
-            width: '100%', padding: '13px',
-            background: C.gold, border: 'none', borderRadius: '10px',
-            color: C.bg, fontFamily: C.sans, fontSize: '13px', fontWeight: 700,
-            letterSpacing: '0.06em', cursor: 'pointer', marginBottom: '10px',
-          }}
-        >
-          プランを見る →
-        </button>
-        <button
-          onClick={onClose}
-          style={{
-            width: '100%', padding: '10px',
-            background: 'transparent', border: '1px solid rgba(196,160,96,0.18)',
-            borderRadius: '10px', color: C.goldMt,
-            fontFamily: C.sans, fontSize: '12px', cursor: 'pointer',
-          }}
-        >
-          閉じる
-        </button>
-      </div>
-    </div>
-  )
-}
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Inner page (needs useSearchParams → must be inside Suspense)
@@ -382,7 +387,9 @@ function ReadingPageInner() {
   const selectSpread = (spread: Spread) => {
     console.log('[ReadingPage] selectSpread clicked:', spread.id)
     if (!spread.free && !canUsePremiumSpread()) {
-      setUpsellMsg('全6種スプレッドはライトプラン以上でご利用いただけます。')
+      setUpsellMsg(isZhTW
+        ? '全部6種牌陣需要亮等以上方案才可使用。'
+        : '六種スプレッドはライトプラン以上でご利用いただけます。')
       return
     }
     const shuffled = [...LENORMAND_CARDS].sort(() => Math.random() - 0.5)
@@ -430,7 +437,9 @@ function ReadingPageInner() {
     // AIリーディング制限チェック
     const check = canUseAiReading(selectedSpread?.id)
     if (!check.allowed) {
-      setUpsellMsg(check.reason ?? 'AIリーディングはライトプラン以上でご利用いただけます。')
+      setUpsellMsg(check.reason ?? (isZhTW
+        ? 'AI解讀需要亮等以上方案才可使用。'
+        : 'AIリーディングはライトプラン以上でご利用いただけます。'))
       return
     }
 
@@ -534,7 +543,7 @@ function ReadingPageInner() {
     } finally {
       setIsGenerating(false)
     }
-  }, [selectedSpread, moon, drawnCards, isSmallTable, isGrandTableau])
+  }, [selectedSpread, moon, drawnCards, isSmallTable, isGrandTableau, isZhTW, locale, POSITIONS])
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: C.bg, color: C.goldLt }}>
