@@ -415,14 +415,38 @@ function getNestedValue(obj: Record<string, unknown>, key: string): string {
 }
 
 // ─── useLocale フック ─────────────────────────────────────────────────────
-/** localStorageからlocaleを初期値として読む（SSR安全） */
+/** ブラウザ言語からデフォルト locale を推定（SSR安全） */
+function detectBrowserLocale(): Locale {
+  if (typeof window === 'undefined') return 'ja'
+  try {
+    const langs = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language ?? 'ja']
+    for (const lang of langs) {
+      if (
+        lang.startsWith('zh-TW') ||
+        lang.startsWith('zh-HK') ||
+        lang.startsWith('zh-Hant') ||
+        lang === 'zh-TW' ||
+        lang === 'zh-HK'
+      ) return 'zh-TW'
+      // 簡体字中国語（zh, zh-CN 等）は日本語にフォールバック
+    }
+  } catch { /* ignore */ }
+  return 'ja'
+}
+
+/** localStorageから locale を読む。未保存の場合はブラウザ言語で自動判定（SSR安全） */
 function getInitialLocale(): Locale {
   if (typeof window === 'undefined') return 'ja'
   try {
     const saved = localStorage.getItem('mooncycle_locale') as Locale | null
     if (saved && saved in translations) return saved
   } catch { /* ignore */ }
-  return 'ja'
+  // 未保存 → ブラウザ言語で判定し、以後の訪問のためにlocalStorageに保存
+  const detected = detectBrowserLocale()
+  try { localStorage.setItem('mooncycle_locale', detected) } catch { /* ignore */ }
+  return detected
 }
 
 export function useLocale() {
