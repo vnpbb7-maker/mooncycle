@@ -175,6 +175,26 @@ export default function PremiumPage() {
 
   const currentPlan = sub?.plan ?? 'free'
 
+  // 表示用価格（zh-TW: NT$ / ja: JPY）
+  // ※ Stripe課金はJPY固定，表示のみ変換
+  const prices = isZh ? {
+    free:              'NT$0',
+    lite_monthly:      'NT$108',
+    lite_yearly:       'NT$880',
+    premium_monthly:   'NT$218',
+    premium_yearly:    'NT$1,740',
+    per_month:         '/月',
+    per_year:          '/年',
+  } : {
+    free:              '¥0',
+    lite_monthly:      '¥480',
+    lite_yearly:       '¥3,800',
+    premium_monthly:   '¥980',
+    premium_yearly:    '¥7,800',
+    per_month:         '/月',
+    per_year:          '/年',
+  }
+
   const freeFeatures = isZh ? [
     { ok: true,  text: '單張・三張抽牌' },
     { ok: true,  text: '今日6張每日牌卡' },
@@ -224,6 +244,7 @@ export default function PremiumPage() {
     '※ 可隨時取消。取消後仍可使用至期限結束',
     '※ AI解讀使用Claude AI（Anthropic）',
     '※ 年付方案為一次性付款',
+    '※ 實際以日圓（JPY）計費，顯示金額依參考匯率換算，依當日匯率可能略有差異。',
   ] : [
     '※ お支払いはStripeにより安全に処理されます',
     '※ いつでもキャンセル可能です。解約後も期間終了まで利用できます',
@@ -327,7 +348,7 @@ export default function PremiumPage() {
           {/* 無料プラン */}
           <PlanCard
             title={isZh ? '免費方案' : '無料プラン'}
-            price="¥0"
+            price={prices.free}
             features={freeFeatures}
             cta={isZh ? '目前方案' : '現在のプラン'}
             ctaDisabled={currentPlan === 'free'}
@@ -337,8 +358,8 @@ export default function PremiumPage() {
           <PlanCard
             badge={isZh ? '✦ 推薦' : '✦ おすすめ'}
             title={isZh ? '輕量方案' : 'ライトプラン'}
-            price="¥480"
-            priceNote={isZh ? '/月' : '/月'}
+            price={yearly ? prices.lite_yearly : prices.lite_monthly}
+            priceNote={yearly ? prices.per_year : prices.per_month}
             highlight
             features={liteFeatures}
             cta={currentPlan === 'lite'
@@ -355,8 +376,8 @@ export default function PremiumPage() {
           {/* プレミアムプラン */}
           <PlanCard
             title={isZh ? '高級方案' : 'プレミアムプラン'}
-            price={yearly ? '¥7,800' : '¥980'}
-            priceNote={yearly ? (isZh ? '/年' : '/年') : (isZh ? '/月' : '/月')}
+            price={yearly ? prices.premium_yearly : prices.premium_monthly}
+            priceNote={yearly ? prices.per_year : prices.per_month}
             features={premiumFeatures}
             cta={currentPlan === 'premium'
               ? (isZh ? '✓ 使用中' : '✓ 利用中')
