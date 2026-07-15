@@ -399,6 +399,19 @@ function BaziResultView({ profile, bazi, moon, onEdit }: {
         <div style={{ display: 'flex', gap: '8px' }}>
           {pillars.map(p => <PillarColumn key={p.label} {...p} />)}
         </div>
+        {/* 節入り日補正注記 */}
+        <div style={{
+          marginTop: '10px',
+          fontFamily: C.sans,
+          fontSize: '10px',
+          color: C.goldDim,
+          textAlign: 'center',
+          letterSpacing: '0.03em',
+        }}>
+          {isZhTW
+            ? '※ 月柱已根據節入日修正（2020–2030年）'
+            : '※ 月柱は節入り日で補正済み（2020〜2030年）'}
+        </div>
       </Card>
 
       {/* ── 日主カード ───────────────────────── */}
