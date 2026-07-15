@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
+import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
 
 /* ── 動的メタデータ (Accept-Language で言語判定) ─────────────────────────── */
@@ -79,6 +80,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col antialiased">
         {children}
+        <Analytics />
       </body>
     </html>
   )

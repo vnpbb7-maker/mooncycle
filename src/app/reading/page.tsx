@@ -1058,11 +1058,13 @@ function ReadingPageInner() {
                         textAlign: 'center',
                       }}>
                         <div style={{ fontSize: '13px', color: '#c4a060', marginBottom: '6px' }}>
-                          ✦ もっと深く読みたいですか？
+                          {isZhTW ? '✦ 想要更深入的解讀嗎？' : '✦ もっと深く読みたいですか？'}
                         </div>
                         <div style={{ fontSize: '12px', color: '#8a7a60', marginBottom: '12px', lineHeight: 1.7 }}>
-                          満月スプレッド・小テーブル・グランタブローなど<br />
-                          6種のスプレッドとAIリーディング月50回がご利用いただけます
+                          {isZhTW
+                            ? <>滿月牌陣・小桌牌陣・大牌陣等<br />6種牌陣與每月50次AI解讀</>
+                            : <>満月スプレッド・小テーブル・グランタブローなど<br />6種のスプレッドとAIリーディング月50回がご利用いただけます</>
+                          }
                         </div>
                         <a
                           href="/premium"
@@ -1073,7 +1075,7 @@ function ReadingPageInner() {
                             display: 'inline-block',
                           }}
                         >
-                          プランを見る →
+                          {isZhTW ? '查看方案 →' : 'プランを見る →'}
                         </a>
                       </div>
                     )}
