@@ -328,9 +328,10 @@ function BaziResultView({ profile, bazi, moon, onEdit }: {
   const moons  = getMoonPhaseMessages(bazi.dayMasterElement, locale)
   const isPremium = getSubscription().plan !== 'free'
 
-  // zh-TW 差し替えテキスト
-  const bodyDesc = isZhTW ? BODY_DESC_ZH[body.strength] : body.desc
-  const yongDesc = isZhTW ? (YONG_DESC_ZH[yong.yongShenElem] ?? yong.yongShenDesc) : yong.yongShenDesc
+  // zh-TW 差し替えテキスト（bazi.tsの新フィールドを優先使用）
+  const bodyDesc = isZhTW ? (body.descZh ?? BODY_DESC_ZH[body.strength]) : body.desc
+  const yongDesc = isZhTW ? (yong.yongShenDescZh ?? YONG_DESC_ZH[yong.yongShenElem] ?? yong.yongShenDesc) : yong.yongShenDesc
+  const yongReason = isZhTW ? yong.reasonZh : yong.reason
   const yearZH = isZhTW ? (YEAR_FORTUNE_ZH[year.tenGodKan] ?? null) : null
   const yearTheme   = yearZH ? yearZH.theme   : year.theme
   const yearAdvice  = yearZH ? yearZH.advice  : year.advice
@@ -456,22 +457,25 @@ function BaziResultView({ profile, bazi, moon, onEdit }: {
       <Card>
         <SectionLabel>{t('profile.body_strength')}</SectionLabel>
         {/* 身強弱バッジ */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <div style={{
-            padding: '4px 14px', borderRadius: '6px',
-            background: body.strength === 'strong' ? 'rgba(90,154,58,0.15)' : 'rgba(74,122,192,0.15)',
-            border: `1px solid ${body.strength === 'strong' ? 'rgba(90,154,58,0.4)' : 'rgba(74,122,192,0.4)'}`,
-            fontFamily: C.sans, fontSize: '12px', fontWeight: 700,
-            color: body.strength === 'strong' ? '#5a9a3a' : '#4a7ac0',
-          }}>{body.strength === 'strong' ? t('profile.strong') : t('profile.weak')}</div>
-          <p style={{ fontFamily: C.sans, fontSize: '12px', color: C.goldMt, lineHeight: 1.7, margin: 0 }}>{bodyDesc}</p>
-        </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+            <div style={{
+              padding: '4px 14px', borderRadius: '6px',
+              background: body.strength === 'strong' ? 'rgba(90,154,58,0.15)' : 'rgba(74,122,192,0.15)',
+              border: `1px solid ${body.strength === 'strong' ? 'rgba(90,154,58,0.4)' : 'rgba(74,122,192,0.4)'}`,
+              fontFamily: C.sans, fontSize: '12px', fontWeight: 700,
+              color: body.strength === 'strong' ? '#5a9a3a' : '#4a7ac0',
+            }}>{body.strength === 'strong' ? t('profile.strong') : t('profile.weak')}</div>
+            <span style={{ fontFamily: C.sans, fontSize: '10px', color: C.goldDim }}>
+              {isZhTW ? `月支${bazi.monthShi}・分數${body.score.toFixed(1)}` : `月支${bazi.monthShi}・スコア${body.score.toFixed(1)}`}
+            </span>
+          </div>
+          <p style={{ fontFamily: C.sans, fontSize: '12px', color: C.goldMt, lineHeight: 1.7, margin: '0 0 16px' }}>{bodyDesc}</p>
         {/* 用神・忌神・喜神 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {[
-            { label: t('profile.yongshen'), sublabel: t('profile.yongshen_sub'), elem: yong.yongShenElem, text: yong.yongShen, desc: yongDesc, accent: true },
-            { label: t('profile.jishen'),   sublabel: t('profile.jishen_sub'),   elem: yong.jiShenElem,  text: yong.jiShen,   desc: null, accent: false },
-            { label: t('profile.xishen'),   sublabel: t('profile.xishen_sub'),   elem: yong.xiShenElem,  text: yong.xiShen,   desc: null, accent: false },
+            { label: t('profile.yongshen'), sublabel: t('profile.yongshen_sub'), elem: yong.yongShenElem, text: yong.yongShen, desc: yongDesc, reason: yongReason, accent: true },
+            { label: t('profile.jishen'),   sublabel: t('profile.jishen_sub'),   elem: yong.jiShenElem,  text: yong.jiShen,   desc: null, reason: null, accent: false },
+            { label: t('profile.xishen'),   sublabel: t('profile.xishen_sub'),   elem: yong.xiShenElem,  text: yong.xiShen,   desc: null, reason: null, accent: false },
           ].map(item => {
             const s = ELEMENT_STYLE[item.elem]
             return (
@@ -485,9 +489,12 @@ function BaziResultView({ profile, bazi, moon, onEdit }: {
                   <ElemBadge elem={item.elem} size="md" />
                   <span style={{ fontFamily: C.sans, fontSize: '11px', color: C.goldMt }}>{item.sublabel}</span>
                 </div>
-                {item.desc && (
-                  <p style={{ fontFamily: C.sans, fontSize: '12px', color: C.goldMt, lineHeight: 1.8, margin: '0', paddingLeft: '38px' }}>{item.desc}</p>
-                )}
+                  {item.desc && (
+                    <p style={{ fontFamily: C.sans, fontSize: '12px', color: C.goldMt, lineHeight: 1.8, margin: '0 0 6px', paddingLeft: '38px' }}>{item.desc}</p>
+                  )}
+                  {item.reason && (
+                    <p style={{ fontFamily: C.sans, fontSize: '11px', color: C.goldDim, lineHeight: 1.6, margin: '0', paddingLeft: '38px' }}>{item.reason}</p>
+                  )}
               </div>
             )
           })}

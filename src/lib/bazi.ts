@@ -272,6 +272,27 @@ export function calculateBazi(birthDate: Date, birthHour = 12): BaziResult {
 // ── 十神（日主との関係） ────────────────────────────────────────────────────
 const SHENG: Record<string, string> = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' }
 const KE:    Record<string, string> = { wood: 'earth', earth: 'water', water: 'fire', fire: 'metal', metal: 'wood' }
+/** 日主が剋される五行（官殺） */
+const KEYED_BY: Record<string, string> = { wood: 'metal', fire: 'water', earth: 'wood', metal: 'fire', water: 'earth' }
+/** 日主を生じる五行（印） */
+const BORN_BY:  Record<string, string> = { wood: 'water', fire: 'wood', earth: 'fire', metal: 'earth', water: 'metal' }
+
+// ── 月支の旺相休囚死スコア ────────────────────────────────────────────────────
+// 旺(4)・相(3)・生(2)・休(1)・囚(0.5)・死(0)
+const MONTH_STRENGTH: Record<string, Record<string, number>> = {
+  '子': { water: 4, metal: 3, wood: 2, fire: 0,   earth: 0.5 },
+  '丑': { earth: 4, metal: 3, water: 2, fire: 1,  wood: 0    },
+  '寅': { wood: 4,  water: 3, fire: 2,  earth: 0, metal: 0   },
+  '卯': { wood: 4,  water: 3, fire: 2,  earth: 0, metal: 0   },
+  '辰': { earth: 4, wood: 3,  water: 2, metal: 1, fire: 0    },
+  '巳': { fire: 4,  wood: 3,  earth: 2, metal: 1, water: 0   },
+  '午': { fire: 4,  wood: 3,  earth: 2, metal: 0, water: 0   },
+  '未': { earth: 4, fire: 3,  wood: 2,  water: 0, metal: 1   },
+  '申': { metal: 4, earth: 3, water: 2, wood: 0,  fire: 0    },
+  '酉': { metal: 4, earth: 3, water: 2, wood: 0,  fire: 0    },
+  '戌': { earth: 4, metal: 3, fire: 2,  wood: 1,  water: 0   },
+  '亥': { water: 4, metal: 3, wood: 2,  earth: 0, fire: 0    },
+}
 
 export function getTenGod(
   dayMasterElem: string,
@@ -286,62 +307,113 @@ export function getTenGod(
   return '不明'
 }
 
-// ── 身強・身弱判定（簡易版） ─────────────────────────────────────────────────
-const SHENG_ORDER = ['wood', 'fire', 'earth', 'metal', 'water']
+// ── 身強・身弱判定（月支旺相+相生相剋スコアリング） ─────────────────────────
 
 export function getBodyStrength(result: BaziResult): {
   strength: 'strong' | 'weak'
   label: string
+  labelZh: string
+  score: number
   desc: string
+  descZh: string
 } {
   const dmElem = result.dayMasterElement
-  const prevIdx = (SHENG_ORDER.indexOf(dmElem) - 1 + 5) % 5
-  const prevElem = SHENG_ORDER[prevIdx]
-  const supportCount = (result.wuxingCount[dmElem] ?? 0) + (result.wuxingCount[prevElem] ?? 0)
 
-  if (supportCount >= 4) {
-    return {
-      strength: 'strong',
-      label: '身強',
-      desc: '日主のエネルギーが強い。自立心と行動力が旺盛。財星・官星を活かす時期に運が開く。',
-    }
+  // 月支スコア（最重要 × 2倍）
+  const monthScore = (MONTH_STRENGTH[result.monthShi] ?? {})[dmElem] ?? 0
+  let score = monthScore * 2
+
+  // 全天干地支の五行から加減算
+  const elems = [
+    result.yearKanElem,  result.yearShiElem,
+    result.monthKanElem, result.monthShiElem,
+    result.dayShiElem,
+    result.hourKanElem,  result.hourShiElem,
+  ]
+  for (const e of elems) {
+    if (e === dmElem)           score += 2    // 比劫（同じ五行）
+    if (BORN_BY[dmElem] === e)  score += 1.5  // 印（日主を生じる）
+    if (SHENG[dmElem]  === e)   score -= 0.5  // 食傷（日主が生じる）
+    if (KE[dmElem]     === e)   score -= 1    // 財（日主が剋す）
+    if (KEYED_BY[dmElem] === e) score -= 1.5  // 官殺（日主を剋す）
   }
+
+  const isStrong = score >= 6
+
   return {
-    strength: 'weak',
-    label: '身弱',
-    desc: '日主のエネルギーが弱め。サポートを受け入れることで力を発揮。印星・比劫の年に運気上昇。',
+    strength: isStrong ? 'strong' : 'weak',
+    label:    isStrong ? '身強' : '身弱',
+    labelZh:  isStrong ? '身強' : '身弱',
+    score,
+    desc: isStrong
+      ? `日主のエネルギーが強い（スコア: ${score.toFixed(1)}）。月支「${result.monthShi}」が力を与えている。財星・官星を活かす時期に力を発揮。`
+      : `日主のエネルギーが弱い（スコア: ${score.toFixed(1)}）。月支「${result.monthShi}」のサポートが弱め。印星・比劫を得ることで運が開く。`,
+    descZh: isStrong
+      ? `日主能量強（分數: ${score.toFixed(1)}）。月支「${result.monthShi}」給予力量。宜發揮財星、官星的力量。`
+      : `日主能量弱（分數: ${score.toFixed(1)}）。月支「${result.monthShi}」支援不足。借助印星、比劫能開運。`,
   }
 }
 
-// ── 用神・忌神・喜神 ─────────────────────────────────────────────────────────
+// ── 用神・忌神・喜神（身強身弱に基づく本格算出） ─────────────────────────────
+
 export function getYongShen(result: BaziResult): {
-  yongShen: string; yongShenElem: string; yongShenDesc: string
+  yongShen: string; yongShenElem: string; yongShenDesc: string; yongShenDescZh: string
   jiShen: string;   jiShenElem: string
   xiShen: string;   xiShenElem: string
+  reason: string;   reasonZh: string
 } {
-  const ELEMS = ['wood', 'fire', 'earth', 'metal', 'water']
   const ELEM_JA: Record<string, string> = { wood: '木', fire: '火', earth: '土', metal: '金', water: '水' }
-  const YONG_DESC: Record<string, string> = {
-    wood:  '木の気を強化。成長・学習・新しい挑戦が運を開く。緑の植物を部屋に置くと◎',
-    fire:  '火の気を強化。表現・行動・人前に出ることが運を開く。南向きの場所が吉',
-    earth: '土の気を強化。安定・継続・基盤作りが運を開く。規則正しい生活が鍵',
-    metal: '金の気を強化。整理・決断・質を高めることが運を開く。白・金色のアイテムが吉',
-    water: '水の気を強化。直感・流れに乗る・学びが運を開く。水辺や入浴が開運行動',
+  const YONG_DESC: Record<string, { ja: string; zh: string }> = {
+    wood:  { ja: '木の気を強化。成長・学習・新しい挑戦が運を開く。緑の植物を部屋に置くと◎',       zh: '強化木氣。成長、學習、新挑戰能開運。宜多接觸綠意。' },
+    fire:  { ja: '火の気を強化。表現・行動・人前に出ることが運を開く。南向きの場所が吉',           zh: '強化火氣。表現、行動、在人前展現自我能開運。南方為吉。' },
+    earth: { ja: '土の気を強化。安定・継続・基盤作りが運を開く。規則正しい生活が鍵',              zh: '強化土氣。穩定、持續、建立基礎能開運。規律生活是關鍵。' },
+    metal: { ja: '金の気を強化。整理・決断・質を高めることが運を開く。白・金色のアイテムが吉',     zh: '強化金氣。整理、決斷、提升品質能開運。白色、金色物品為吉。' },
+    water: { ja: '水の気を強化。直感・流れに乗る・学びが運を開く。水辺や入浴が開運行動',          zh: '強化水氣。直覺、順流而行、學習能開運。親近水邊或泡澡有助開運。' },
   }
 
-  // 最も少ない五行が用神、最も多い五行が忌神（簡易版）
-  const sorted = [...ELEMS].sort((a, b) => (result.wuxingCount[a] ?? 0) - (result.wuxingCount[b] ?? 0))
-  const yongElem = sorted[0]
-  const jiElem   = sorted[4]
+  const dmElem = result.dayMasterElement
+  const body = getBodyStrength(result)
+
+  let yongElem: string
+  let jiElem:   string
+
+  if (body.strength === 'strong') {
+    // 身強 → 抑制・消耗させる官殺 or 食傷が用神
+    const keElem    = KEYED_BY[dmElem]  // 官殺（日主を剋す）
+    const shengElem = SHENG[dmElem]     // 食傷（日主が生じる）
+    // 命式中でより少ない方を優先
+    const keCount    = result.wuxingCount[keElem]    ?? 0
+    const shengCount = result.wuxingCount[shengElem] ?? 0
+    yongElem = keCount <= shengCount ? keElem : shengElem
+    jiElem   = BORN_BY[dmElem]  // 印（日主を生じる = 身強をさらに強める）
+  } else {
+    // 身弱 → 生・助する印 or 比劫が用神
+    const bornByElem = BORN_BY[dmElem]
+    const bornByCount = result.wuxingCount[bornByElem] ?? 0
+    yongElem = bornByCount > 0 ? bornByElem : dmElem  // 印がなければ比劫（同五行）
+    jiElem   = KE[dmElem]   // 財（日主が剋す = 身弱にとって消耗）
+  }
+
   // 喜神 = 用神を生じる五行
-  const xiElemKey = Object.keys(SHENG).find(k => SHENG[k] === yongElem) ?? 'water'
+  const xiElem = Object.keys(SHENG).find(k => SHENG[k] === yongElem) ?? yongElem
+
+  const reason   = body.strength === 'strong'
+    ? `身強のため、日主（${ELEM_JA[dmElem]}）を抑制・消耗させる${ELEM_JA[yongElem]}が用神`
+    : `身弱のため、日主（${ELEM_JA[dmElem]}）を生助する${ELEM_JA[yongElem]}が用神`
+  const reasonZh = body.strength === 'strong'
+    ? `身強，故以剋洩日主（${ELEM_JA[dmElem]}）之${ELEM_JA[yongElem]}為用神`
+    : `身弱，故以生助日主（${ELEM_JA[dmElem]}）之${ELEM_JA[yongElem]}為用神`
 
   return {
-    yongShen: ELEM_JA[yongElem], yongShenElem: yongElem, yongShenDesc: YONG_DESC[yongElem] ?? '',
-    jiShen:   ELEM_JA[jiElem],  jiShenElem: jiElem,
-    xiShen:   ELEM_JA[xiElemKey], xiShenElem: xiElemKey,
+    yongShen: ELEM_JA[yongElem], yongShenElem: yongElem,
+    yongShenDesc:   YONG_DESC[yongElem]?.ja ?? '',
+    yongShenDescZh: YONG_DESC[yongElem]?.zh ?? '',
+    jiShen: ELEM_JA[jiElem], jiShenElem: jiElem,
+    xiShen: ELEM_JA[xiElem], xiShenElem: xiElem,
+    reason, reasonZh,
   }
 }
+
 
 // ── 今年の流年運（2026年 = 丙午年） ─────────────────────────────────────────
 const YEAR_FORTUNE_THEMES: Record<string, { theme: string; advice: string; actions: string[] }> = {
