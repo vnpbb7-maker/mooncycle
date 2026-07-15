@@ -178,6 +178,21 @@ export function getMoonAge(date: Date = new Date()): number {
   return ((diffDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH
 }
 
+/**
+ * 月齢から「新月期間」「満月期間」かを判定する。
+ * 月暦カレンダー・日記ページのイベント表示に使用。
+ * @param age 月齢（0〜29.53）
+ */
+export function getMoonEventType(
+  age: number,
+): 'new_moon_period' | 'full_moon_period' | null {
+  // 新月期間: 月齢 0〜2日 または 27.53日以降（前後1日）
+  if (age <= 2 || age >= SYNODIC_MONTH - 2) return 'new_moon_period'
+  // 満月期間: 月齢 13〜16日（前後1.5日）
+  if (age >= 13 && age <= 16) return 'full_moon_period'
+  return null
+}
+
 // ── 月星座の今日の影響文 ─────────────────────────────────────────────────────
 export const MOON_SIGN_INFLUENCE: Record<string, {
   ja: { mood: string; advice: string }
