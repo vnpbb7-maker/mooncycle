@@ -409,6 +409,59 @@ function Hero({
               {theme}
             </span>
           </div>
+
+          {/* ── SP用 月情報ピル（PCは月ウィジェット補助）── */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+              marginTop: '16px',
+            }}
+          >
+            {/* 月相 */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              background: 'rgba(196,160,96,0.07)',
+              border: '0.5px solid rgba(196,160,96,0.22)',
+              borderRadius: '99px',
+              padding: '5px 12px',
+              fontFamily: C.sans, fontSize: '12px', color: C.gold,
+            }}>
+              <span>{moon.phaseEmoji}</span>
+              <span>{phaseLabel}</span>
+            </div>
+
+            {/* 月星座 */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              background: 'rgba(196,160,96,0.07)',
+              border: '0.5px solid rgba(196,160,96,0.22)',
+              borderRadius: '99px',
+              padding: '5px 12px',
+              fontFamily: C.sans, fontSize: '12px', color: C.gold,
+            }}>
+              <span>⭐</span>
+              <span>{isZh ? '月亮星座' : '月星座'}：{moon.moonSign}</span>
+            </div>
+
+            {/* 次の満月 */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              background: 'rgba(196,160,96,0.07)',
+              border: '0.5px solid rgba(196,160,96,0.22)',
+              borderRadius: '99px',
+              padding: '5px 12px',
+              fontFamily: C.sans, fontSize: '12px', color: C.goldMt,
+            }}>
+              <span>🌕</span>
+              <span>
+                {isZh
+                  ? `滿月：還有${daysToFull}天`
+                  : `満月：あと${daysToFull}日`}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* ── 右: 月相ウィジェット（PC のみ）── */}
