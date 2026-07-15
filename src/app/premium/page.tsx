@@ -195,14 +195,14 @@ export default function PremiumPage() {
     { ok: true,  text: '免費方案所有功能' },
     { ok: true,  text: '全6種牌陣' },
     { ok: true,  text: 'AI解讀 每月50次' },
-    { ok: true,  text: '命盤×月個人化' },
+    { ok: true,  text: '命盤×月相解讀' },
     { ok: false, text: 'AI解讀無限次' },
     { ok: false, text: '優先支援' },
   ] : [
     { ok: true,  text: '無料プランの全機能' },
     { ok: true,  text: '全6種スプレッド' },
     { ok: true,  text: 'AIリーディング 月50回' },
-    { ok: true,  text: '命式×月パーソナライズ' },
+    { ok: true,  text: '命式×月相リーディング' },
     { ok: false, text: 'AIリーディング無制限' },
     { ok: false, text: '優先サポート' },
   ]
