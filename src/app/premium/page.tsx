@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Navbar from '@/components/Navbar'
 import { getSubscription } from '@/lib/subscription'
 import type { SubscriptionState } from '@/lib/subscription'
+import { useLocale } from '@/lib/i18n'
 
 const C = {
   bg: '#1a1508', bgCard: '#1e1a08', bgDeep: '#120f05',
@@ -61,6 +62,8 @@ function PlanCard({
   loading?: boolean
 }) {
   const [hovered, setHovered] = useState(false)
+  const { locale } = useLocale()
+  const isZh = locale === 'zh-TW'
 
   return (
     <div style={{
@@ -124,7 +127,7 @@ function PlanCard({
           opacity: loading ? 0.6 : 1,
         }}
       >
-        {loading ? '処理中...' : cta}
+        {loading ? (isZh ? '處理中...' : '処理中...') : cta}
       </button>
     </div>
   )
@@ -137,6 +140,8 @@ export default function PremiumPage() {
   const [sub, setSub]         = useState<SubscriptionState | null>(null)
   const [yearly, setYearly]   = useState(false)
   const [loading, setLoading] = useState<string | null>(null) // 'lite' | 'premium'
+  const { locale } = useLocale()
+  const isZh = locale === 'zh-TW'
 
   useEffect(() => {
     setSub(getSubscription())
@@ -155,19 +160,29 @@ export default function PremiumPage() {
       window.location.href = url
     } catch (err) {
       console.error(err)
-      alert('決済ページへの遷移に失敗しました。しばらくしてから再試行してください。')
+      alert(isZh
+        ? '無法跳轉至付款頁面。請稍後再試。'
+        : '決済ページへの遷移に失敗しました。しばらくしてから再試行してください。')
       setLoading(null)
     }
   }
 
   const planLabel = (plan: string) => {
-    if (plan === 'lite')    return '🌙 ライトプラン利用中'
-    if (plan === 'premium') return '✦ プレミアムプラン利用中'
+    if (plan === 'lite')    return isZh ? '🌙 使用中：輕量方案' : '🌙 ライトプラン利用中'
+    if (plan === 'premium') return isZh ? '✦ 使用中：高級方案' : '✦ プレミアムプラン利用中'
     return null
   }
 
   const currentPlan = sub?.plan ?? 'free'
-  const freeFeatures = [
+
+  const freeFeatures = isZh ? [
+    { ok: true,  text: '單張・三張抽牌' },
+    { ok: true,  text: '今日6張每日牌卡' },
+    { ok: true,  text: '月曆行事曆' },
+    { ok: true,  text: '月亮日記（裝置保存）' },
+    { ok: false, text: 'AI解讀' },
+    { ok: false, text: '全部牌陣（6種）' },
+  ] : [
     { ok: true,  text: '1枚引き・3枚引き' },
     { ok: true,  text: '今日の6枚デイリーカード' },
     { ok: true,  text: '月暦カレンダー' },
@@ -175,19 +190,45 @@ export default function PremiumPage() {
     { ok: false, text: 'AIリーディング' },
     { ok: false, text: '全スプレッド（6種）' },
   ]
-  const liteFeatures = [
-    { ok: true, text: '無料プランの全機能' },
-    { ok: true, text: '全6種スプレッド' },
-    { ok: true, text: 'AIリーディング 月50回' },
-    { ok: true, text: '命式×月パーソナライズ' },
+
+  const liteFeatures = isZh ? [
+    { ok: true,  text: '免費方案所有功能' },
+    { ok: true,  text: '全6種牌陣' },
+    { ok: true,  text: 'AI解讀 每月50次' },
+    { ok: true,  text: '命盤×月個人化' },
+    { ok: false, text: 'AI解讀無限次' },
+    { ok: false, text: '優先支援' },
+  ] : [
+    { ok: true,  text: '無料プランの全機能' },
+    { ok: true,  text: '全6種スプレッド' },
+    { ok: true,  text: 'AIリーディング 月50回' },
+    { ok: true,  text: '命式×月パーソナライズ' },
     { ok: false, text: 'AIリーディング無制限' },
     { ok: false, text: '優先サポート' },
   ]
-  const premiumFeatures = [
+
+  const premiumFeatures = isZh ? [
+    { ok: true, text: '輕量方案所有功能' },
+    { ok: true, text: 'AI解讀 無限次' },
+    { ok: true, text: '優先支援' },
+    { ok: true, text: '新功能搶先體驗' },
+  ] : [
     { ok: true, text: 'ライトプランの全機能' },
     { ok: true, text: 'AIリーディング 無制限' },
     { ok: true, text: '優先サポート' },
     { ok: true, text: '新機能の先行アクセス' },
+  ]
+
+  const notes = isZh ? [
+    '※ 付款由Stripe安全處理',
+    '※ 可隨時取消。取消後仍可使用至期限結束',
+    '※ AI解讀使用Claude AI（Anthropic）',
+    '※ 年付方案為一次性付款',
+  ] : [
+    '※ お支払いはStripeにより安全に処理されます',
+    '※ いつでもキャンセル可能です。解約後も期間終了まで利用できます',
+    '※ AIリーディングはClaude AI（Anthropic）を使用しています',
+    '※ 年額プランは一括払いです',
   ]
 
   return (
@@ -204,11 +245,13 @@ export default function PremiumPage() {
           PRICING
         </div>
         <h1 style={{ fontFamily: C.serif, fontSize: 'clamp(28px,4vw,44px)', fontWeight: 300, color: C.gold, marginBottom: '16px' }}>
-          MoonCycleを、もっと深く。
+          {isZh ? 'MoonCycle，更深入地探索。' : 'MoonCycleを、もっと深く。'}
         </h1>
         <p style={{ fontFamily: C.sans, fontSize: '14px', color: C.goldMt, maxWidth: '480px', margin: '0 auto', lineHeight: 1.8 }}>
-          月のリズムとあなただけの命式が交差する、
-          <br />本格的な占いの体験へ
+          {isZh
+            ? '月亮節奏與你獨特命盤交會的，正統占卜體驗'
+            : <>月のリズムとあなただけの命式が交差する、<br />本格的な占いの体験へ</>
+          }
         </p>
 
         {/* 現在のプラン状態 */}
@@ -223,23 +266,31 @@ export default function PremiumPage() {
             {planLabel(currentPlan)}
             {currentPlan === 'lite' && (
               <span style={{ color: C.goldMt }}>
-                · 今月あと {Math.max(0, 50 - (sub.aiReadingCount ?? 0))} 回
+                {isZh
+                  ? `· 本月剩餘 ${Math.max(0, 50 - (sub.aiReadingCount ?? 0))} 次`
+                  : `· 今月あと ${Math.max(0, 50 - (sub.aiReadingCount ?? 0))} 回`
+                }
               </span>
             )}
             {currentPlan === 'premium' && sub.validUntil && (
               <span style={{ color: C.goldMt }}>
-                · {new Date(sub.validUntil).toLocaleDateString('ja-JP')}まで
+                {isZh
+                  ? `· 有效至 ${new Date(sub.validUntil).toLocaleDateString('zh-TW')}`
+                  : `· ${new Date(sub.validUntil).toLocaleDateString('ja-JP')}まで`
+                }
               </span>
             )}
           </div>
         )}
 
-        {/* 年額/月額トグル */}
+        {/* 月額/年額トグル */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           gap: '12px', marginTop: '32px',
         }}>
-          <span style={{ fontFamily: C.sans, fontSize: '13px', color: yearly ? C.goldDim : C.goldLt }}>月額</span>
+          <span style={{ fontFamily: C.sans, fontSize: '13px', color: yearly ? C.goldDim : C.goldLt }}>
+            {isZh ? '月付' : '月額'}
+          </span>
           <div
             onClick={() => setYearly(y => !y)}
             style={{
@@ -257,13 +308,13 @@ export default function PremiumPage() {
             }} />
           </div>
           <span style={{ fontFamily: C.sans, fontSize: '13px', color: yearly ? C.goldLt : C.goldDim }}>
-            年額
+            {isZh ? '年付' : '年額'}
             <span style={{
               marginLeft: '6px', fontSize: '10px', padding: '2px 7px',
               background: 'rgba(90,154,58,0.15)', color: '#5a9a3a',
               border: '1px solid rgba(90,154,58,0.3)', borderRadius: '4px',
             }}>
-              2ヶ月分お得
+              {isZh ? '省2個月' : '2ヶ月分お得'}
             </span>
           </span>
         </div>
@@ -275,22 +326,24 @@ export default function PremiumPage() {
 
           {/* 無料プラン */}
           <PlanCard
-            title="無料プラン"
+            title={isZh ? '免費方案' : '無料プラン'}
             price="¥0"
             features={freeFeatures}
-            cta="現在のプラン"
+            cta={isZh ? '目前方案' : '現在のプラン'}
             ctaDisabled={currentPlan === 'free'}
           />
 
           {/* ライトプラン */}
           <PlanCard
-            badge="✦ おすすめ"
-            title="ライトプラン"
+            badge={isZh ? '✦ 推薦' : '✦ おすすめ'}
+            title={isZh ? '輕量方案' : 'ライトプラン'}
             price="¥480"
-            priceNote="/月"
+            priceNote={isZh ? '/月' : '/月'}
             highlight
             features={liteFeatures}
-            cta={currentPlan === 'lite' ? '✓ 利用中' : 'ライトプランを始める'}
+            cta={currentPlan === 'lite'
+              ? (isZh ? '✓ 使用中' : '✓ 利用中')
+              : (isZh ? '開始輕量方案' : 'ライトプランを始める')}
             ctaAccent={currentPlan !== 'lite'}
             ctaDisabled={currentPlan === 'lite'}
             loading={loading === 'lite'}
@@ -301,11 +354,13 @@ export default function PremiumPage() {
 
           {/* プレミアムプラン */}
           <PlanCard
-            title="プレミアムプラン"
+            title={isZh ? '高級方案' : 'プレミアムプラン'}
             price={yearly ? '¥7,800' : '¥980'}
-            priceNote={yearly ? '/年' : '/月'}
+            priceNote={yearly ? (isZh ? '/年' : '/年') : (isZh ? '/月' : '/月')}
             features={premiumFeatures}
-            cta={currentPlan === 'premium' ? '✓ 利用中' : 'プレミアムプランを始める'}
+            cta={currentPlan === 'premium'
+              ? (isZh ? '✓ 使用中' : '✓ 利用中')
+              : (isZh ? '開始高級方案' : 'プレミアムプランを始める')}
             ctaAccent={currentPlan !== 'premium'}
             ctaDisabled={currentPlan === 'premium'}
             loading={loading === 'premium'}
@@ -326,7 +381,7 @@ export default function PremiumPage() {
             onMouseEnter={e => (e.currentTarget.style.color = C.goldMt)}
             onMouseLeave={e => (e.currentTarget.style.color = C.goldDim)}
           >
-            以前ご購入のお客様はこちら → 購入を復元する
+            {isZh ? '曾經購買的用戶請點此 → 恢復購買' : '以前ご購入のお客様はこちら → 購入を復元する'}
           </a>
         </div>
 
@@ -336,12 +391,7 @@ export default function PremiumPage() {
           borderTop: `1px solid ${C.bdr}`,
           display: 'flex', flexDirection: 'column', gap: '8px',
         }}>
-          {[
-            '※ お支払いはStripeにより安全に処理されます',
-            '※ いつでもキャンセル可能です。解約後も期間終了まで利用できます',
-            '※ AIリーディングはClaude AI（Anthropic）を使用しています',
-            '※ 年額プランは一括払いです',
-          ].map((t, i) => (
+          {notes.map((t, i) => (
             <div key={i} style={{ fontFamily: C.sans, fontSize: '11px', color: C.goldDim, letterSpacing: '0.02em' }}>
               {t}
             </div>
