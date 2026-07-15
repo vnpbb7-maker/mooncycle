@@ -103,16 +103,19 @@ export function calculateMoonPhase(date: Date = new Date()): MoonPhaseData {
   // 輝面比（0.0=新月, 1.0=満月）
   const illumination = (1 - Math.cos((angle * Math.PI) / 180)) / 2
 
-  // 月相の判定
+  // 月相の判定（Star Walk 準拠：照明率ベースの自然な境界）
+  // 新月:照明<1%  三日月:1〜45%  上弦:45〜55%  十三夜:55〜99%
+  // 満月:照明>99% 十六夜:99〜55% 下弦:55〜45% 晦月:45〜1%
   let phase: MoonPhase
-  if      (angle < 45)  phase = 'newMoon'
-  else if (angle < 90)  phase = 'waxingCrescent'
-  else if (angle < 135) phase = 'firstQuarter'
-  else if (angle < 180) phase = 'waxingGibbous'
-  else if (angle < 225) phase = 'fullMoon'
-  else if (angle < 270) phase = 'waningGibbous'
-  else if (angle < 315) phase = 'lastQuarter'
-  else                  phase = 'waningCrescent'
+  if      (angle < 10)  phase = 'newMoon'          // 照明 < 1%
+  else if (angle < 80)  phase = 'waxingCrescent'   // 照明 1〜45%（三日月）
+  else if (angle < 100) phase = 'firstQuarter'     // 照明 45〜55%（上弦の月）
+  else if (angle < 170) phase = 'waxingGibbous'    // 照明 55〜99%（十三夜）
+  else if (angle < 190) phase = 'fullMoon'         // 照明 > 99%（満月）
+  else if (angle < 260) phase = 'waningGibbous'    // 照明 99〜55%（十六夜）
+  else if (angle < 280) phase = 'lastQuarter'      // 照明 55〜45%（下弦の月）
+  else if (angle < 350) phase = 'waningCrescent'   // 照明 45〜1%（晦月）
+  else                  phase = 'newMoon'           // 照明 < 1%（次の新月）
 
   // 月星座の計算（概算）
   const moonLongitude = (BASE_LONGITUDE + diffDays * MOON_DAILY_MOTION) % 360
