@@ -15,6 +15,7 @@ import {
   ELEMENT_LABEL,
   ELEMENT_STYLE,
   DM_INFO_ZH,
+  ZANG_GAN,
 } from '@/lib/bazi'
 import type { BaziResult } from '@/lib/bazi'
 import { getSubscription } from '@/lib/subscription'
@@ -122,16 +123,44 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
   )
 }
 
-// ── 四柱カラム ────────────────────────────────────────────────────────────────
-function PillarColumn({ label, kan, shi, kanElem, shiElem, highlight }: {
-  label: string; kan: string; shi: string; kanElem: string; shiElem: string; highlight?: boolean
+// ── 通変星バッジ ───────────────────────────────────────────────────────────────
+const TEN_GOD_COLOR: Record<string, string> = {
+  '比肩':'#7a9a3a','劫財':'#5a8a2a',
+  '食神':'#c06060','傷官':'#a04040',
+  '偏財':'#b08040','正財':'#c09050',
+  '偏官':'#4a7ac0','正官':'#3a6aad',
+  '偏印':'#8a60c0','印綬':'#7a50b0',
+  '不明': C.goldDim,
+}
+function TenGodBadge({ name }: { name: string }) {
+  const color = TEN_GOD_COLOR[name] ?? C.goldDim
+  return (
+    <span style={{
+      fontFamily: C.sans, fontSize: '8px', color,
+      border: `0.5px solid ${color}66`, borderRadius: '3px',
+      padding: '1px 4px', letterSpacing: '0.04em',
+    }}>{name}</span>
+  )
+}
+
+// ── 四柱カラム（本格版）────────────────────────────────────────────────────────
+function PillarColumn({
+  label, kan, shi, kanElem, shiElem, highlight,
+  kanTenGod, shiTenGod, twelve, zangGan, zangGanTenGods, specialStars,
+}: {
+  label: string; kan: string; shi: string; kanElem: string; shiElem: string
+  highlight?: boolean
+  kanTenGod?: string; shiTenGod?: string
+  twelve?: { name: string; power: number; stars: string }
+  zangGan?: string[]; zangGanTenGods?: string[]
+  specialStars?: string[]
 }) {
   return (
     <div style={{
-      flex: 1, minWidth: '70px', borderRadius: '12px', padding: '14px 10px',
+      flex: 1, minWidth: '70px', borderRadius: '12px', padding: '12px 8px',
       background: highlight ? 'rgba(196,160,96,0.08)' : C.bgCard,
       border: `1px solid ${highlight ? C.bdrSt : C.bdr}`,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
       position: 'relative',
     }}>
       {highlight && (
@@ -142,16 +171,69 @@ function PillarColumn({ label, kan, shi, kanElem, shiElem, highlight }: {
           whiteSpace: 'nowrap',
         }}>日主</div>
       )}
+      {/* 柱ラベル */}
       <div style={{ fontFamily: C.sans, fontSize: '8px', color: C.goldDim, letterSpacing: '0.12em' }}>{label}</div>
+
+      {/* 天干 */}
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: C.serif, fontSize: '28px', color: highlight ? C.gold : C.goldLt, lineHeight: 1, marginBottom: '5px' }}>{kan}</div>
+        {kanTenGod && <TenGodBadge name={kanTenGod} />}
+        <div style={{ fontFamily: C.serif, fontSize: '28px', color: highlight ? C.gold : C.goldLt, lineHeight: 1.1, marginTop: '2px' }}>{kan}</div>
         <ElemBadge elem={kanElem} />
       </div>
-      <div style={{ width: '100%', height: '1px', background: C.bdr }} />
+
+      <div style={{ width: '100%', height: '0.5px', background: C.bdr }} />
+
+      {/* 地支 + 十二運 */}
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: C.serif, fontSize: '24px', color: C.goldMt, lineHeight: 1, marginBottom: '5px' }}>{shi}</div>
+        {shiTenGod && <TenGodBadge name={shiTenGod} />}
+        <div style={{ fontFamily: C.serif, fontSize: '24px', color: C.goldMt, lineHeight: 1.1, marginTop: '2px' }}>{shi}</div>
         <ElemBadge elem={shiElem} />
+        {twelve && (
+          <div style={{ marginTop: '4px', fontFamily: C.sans, fontSize: '8px', color: C.goldDim }}>
+            {twelve.name}
+            <div style={{ fontSize: '9px', letterSpacing: '-1px' }}>{twelve.stars}</div>
+          </div>
+        )}
       </div>
+
+      {/* 蔵干 */}
+      {zangGan && zangGan.length > 0 && (
+        <>
+          <div style={{ width: '100%', height: '0.5px', background: C.bdr }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: C.sans, fontSize: '7px', color: C.goldDim, marginBottom: '2px' }}>蔵干</div>
+            <div style={{ display: 'flex', gap: '3px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {zangGan.map((g, i) => (
+                <div key={g} style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: C.serif, fontSize: '11px', color: C.goldMt }}>{g}</div>
+                  {zangGanTenGods?.[i] && (
+                    <div style={{ fontFamily: C.sans, fontSize: '7px', color: TEN_GOD_COLOR[zangGanTenGods[i]] ?? C.goldDim }}>
+                      {zangGanTenGods[i]}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 特殊星 */}
+      {specialStars && specialStars.length > 0 && (
+        <>
+          <div style={{ width: '100%', height: '0.5px', background: C.bdr }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
+            {specialStars.map(s => (
+              <div key={s} style={{
+                fontFamily: C.sans, fontSize: '7px',
+                color: s === '空亡' ? '#c06060' : s === '亡神' ? '#a04040' : '#c4a060',
+                border: `0.5px solid currentColor`, borderRadius: '3px', padding: '1px 4px',
+                whiteSpace: 'nowrap',
+              }}>{s}</div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -337,11 +419,48 @@ function BaziResultView({ profile, bazi, moon, onEdit }: {
   const yearAdvice  = yearZH ? yearZH.advice  : year.advice
   const yearActions = yearZH ? yearZH.actions : year.actions
 
+  // 蔵干通変星を事前計算（import済みのZANG_GANを使用）
+  const zangTenGods = (zangGanArr: string[]) =>
+    zangGanArr.map(g => {
+      // bazi.tsのTIANGAN/TG_ELEMを参照するため、day masterから直接算出
+      const idx = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'].indexOf(g)
+      const dmIdx = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'].indexOf(bazi.dayKan)
+      if (idx < 0 || dmIdx < 0) return '不明'
+      const tgElem = ['wood','wood','fire','fire','earth','earth','metal','metal','water','water'][idx]
+      const dmElem = ['wood','wood','fire','fire','earth','earth','metal','metal','water','water'][dmIdx]
+      const dmYang = ['甲','丙','戊','庚','壬'].includes(bazi.dayKan)
+      const gYang  = ['甲','丙','戊','庚','壬'].includes(g)
+      const same   = dmYang === gYang
+      if (bazi.dayKan === g) return '比肩'
+      const SH = { wood:'fire',fire:'earth',earth:'metal',metal:'water',water:'wood' } as Record<string,string>
+      const KY = { wood:'metal',fire:'water',earth:'wood',metal:'fire',water:'earth'} as Record<string,string>
+      const KE = { wood:'earth',earth:'water',water:'fire',fire:'metal',metal:'wood'} as Record<string,string>
+      const BY = { wood:'water',fire:'wood',earth:'fire',metal:'earth',water:'metal'} as Record<string,string>
+      if (dmElem === tgElem)         return same ? '比肩' : '劫財'
+      if (SH[dmElem] === tgElem)     return same ? '食神' : '傷官'
+      if (KE[dmElem] === tgElem)     return same ? '偏財' : '正財'
+      if (KY[dmElem] === tgElem)     return same ? '偏官' : '正官'
+      if (BY[dmElem] === tgElem)     return same ? '偏印' : '印綬'
+      return '不明'
+    })
+
   const pillars = [
-    { label: t('profile.pillar_year'),  kan: bazi.yearKan,  shi: bazi.yearShi,  kanElem: bazi.yearKanElem,  shiElem: bazi.yearShiElem },
-    { label: t('profile.pillar_month'), kan: bazi.monthKan, shi: bazi.monthShi, kanElem: bazi.monthKanElem, shiElem: bazi.monthShiElem },
-    { label: t('profile.pillar_day'),   kan: bazi.dayKan,   shi: bazi.dayShi,   kanElem: bazi.dayKanElem,   shiElem: bazi.dayShiElem, highlight: true },
-    { label: t('profile.pillar_hour'),  kan: bazi.hourKan,  shi: bazi.hourShi,  kanElem: bazi.hourKanElem,  shiElem: bazi.hourShiElem },
+    { label: t('profile.pillar_year'),  kan: bazi.yearKan,  shi: bazi.yearShi,  kanElem: bazi.yearKanElem,  shiElem: bazi.yearShiElem,
+      kanTenGod: bazi.yearKanTenGod,   shiTenGod: bazi.yearShiTenGod,  twelve: bazi.yearTwelve,
+      zangGan: bazi.yearZangGan,  zangGanTenGods: zangTenGods(bazi.yearZangGan),
+      specialStars: bazi.specialStars.yearPillar ?? [] },
+    { label: t('profile.pillar_month'), kan: bazi.monthKan, shi: bazi.monthShi, kanElem: bazi.monthKanElem, shiElem: bazi.monthShiElem,
+      kanTenGod: bazi.monthKanTenGod,  shiTenGod: bazi.monthShiTenGod, twelve: bazi.monthTwelve,
+      zangGan: bazi.monthZangGan, zangGanTenGods: zangTenGods(bazi.monthZangGan),
+      specialStars: bazi.specialStars.monthPillar ?? [] },
+    { label: t('profile.pillar_day'),   kan: bazi.dayKan,   shi: bazi.dayShi,   kanElem: bazi.dayKanElem,   shiElem: bazi.dayShiElem, highlight: true,
+      kanTenGod: undefined,             shiTenGod: bazi.dayShiTenGod,  twelve: bazi.dayTwelve,
+      zangGan: bazi.dayZangGan,   zangGanTenGods: zangTenGods(bazi.dayZangGan),
+      specialStars: bazi.specialStars.dayPillar ?? [] },
+    { label: t('profile.pillar_hour'),  kan: bazi.hourKan,  shi: bazi.hourShi,  kanElem: bazi.hourKanElem,  shiElem: bazi.hourShiElem,
+      kanTenGod: bazi.hourKanTenGod,   shiTenGod: bazi.hourShiTenGod, twelve: bazi.hourTwelve,
+      zangGan: bazi.hourZangGan,  zangGanTenGods: zangTenGods(bazi.hourZangGan),
+      specialStars: bazi.specialStars.hourPillar ?? [] },
   ]
 
   const generateAiReading = async () => {
@@ -412,6 +531,52 @@ function BaziResultView({ profile, bazi, moon, onEdit }: {
           {isZhTW
             ? '※ 月柱已根據節入日修正（2020–2030年）'
             : '※ 月柱は節入り日で補正済み（2020〜2030年）'}
+        </div>
+      </Card>
+
+      {/* ── 納音 ─────────────────────────────── */}
+      <Card>
+        <SectionLabel>{isZhTW ? '納音' : '納音（ないん）'}</SectionLabel>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          {[
+            { label: t('profile.pillar_year'),  nayin: bazi.yearNayin },
+            { label: t('profile.pillar_month'), nayin: bazi.monthNayin },
+            { label: t('profile.pillar_day'),   nayin: bazi.dayNayin },
+            { label: t('profile.pillar_hour'),  nayin: bazi.hourNayin },
+          ].map(item => (
+            <div key={item.label} style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: 'rgba(196,160,96,0.04)', borderRadius: '8px', padding: '8px 10px',
+              border: `1px solid ${C.bdr}`,
+            }}>
+              <span style={{ fontFamily: C.sans, fontSize: '9px', color: C.goldDim, minWidth: '22px' }}>{item.label}</span>
+              <span style={{ fontFamily: C.serif, fontSize: '12px', color: C.goldLt }}>{item.nayin}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: '8px', fontFamily: C.sans, fontSize: '10px', color: C.goldDim, lineHeight: 1.6 }}>
+          {isZhTW
+            ? '納音是由天干地支組合而成的60種生命能量之聲，代表先天的氣質與才能。'
+            : '納音は60干支の組み合わせから導かれる先天的な気質・才能の象徴です。'}
+        </div>
+      </Card>
+
+      {/* ── 空亡 ─────────────────────────────── */}
+      <Card>
+        <SectionLabel>{isZhTW ? '空亡（旬空）' : '空亡（くうぼう）'}</SectionLabel>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {bazi.kuuBou.map(k => (
+            <div key={k} style={{
+              fontFamily: C.serif, fontSize: '20px', color: '#c06060',
+              background: 'rgba(192,96,96,0.08)', border: '1px solid rgba(192,96,96,0.3)',
+              borderRadius: '8px', padding: '8px 16px',
+            }}>{k}</div>
+          ))}
+          <div style={{ fontFamily: C.sans, fontSize: '11px', color: C.goldMt, lineHeight: 1.7 }}>
+            {isZhTW
+              ? `日柱（${bazi.dayKan}${bazi.dayShi}）の旬中、${bazi.kuuBou.join('・')}が空亡。\n這些地支的運勢能量暫時減弱，需特別注意。`
+              : `日柱（${bazi.dayKan}${bazi.dayShi}）の旬中、${bazi.kuuBou.join('・')}が空亡。\nこの地支が巡ってくる年・月は慎重さが必要。`}
+          </div>
         </div>
       </Card>
 

@@ -9,6 +9,24 @@ export interface BaziResult {
   dayMasterElement: string
   dayMasterName: string
   wuxingCount: Record<string, number>
+  // 蔭干
+  yearZangGan:  string[]; monthZangGan: string[]
+  dayZangGan:   string[]; hourZangGan:  string[]
+  // 通変星（天干）
+  yearKanTenGod: string; monthKanTenGod: string; hourKanTenGod: string
+  // 通変星（地支・本気）
+  yearShiTenGod: string; monthShiTenGod: string; dayShiTenGod: string; hourShiTenGod: string
+  // 十二運
+  yearTwelve:  { name: string; power: number; stars: string }
+  monthTwelve: { name: string; power: number; stars: string }
+  dayTwelve:   { name: string; power: number; stars: string }
+  hourTwelve:  { name: string; power: number; stars: string }
+  // 空亡
+  kuuBou: string[]
+  // 納音
+  yearNayin: string; monthNayin: string; dayNayin: string; hourNayin: string
+  // 特殊星
+  specialStars: Record<string, string[]>
 }
 
 const TIANGAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸']
@@ -219,7 +237,160 @@ function getMonthFromSekki(date: Date): number {
   })!]
 }
 
+// ── 蔵干テーブル ──────────────────────────────────────────────────────────────
+export const ZANG_GAN: Record<string, string[]> = {
+  '子': ['壬','癸'],       '丑': ['己','癸','辛'],
+  '寅': ['甲','丙','戊'], '卯': ['甲','乙'],
+  '辰': ['戊','乙','癸'], '巳': ['丙','戊','庚'],
+  '午': ['丁','己'],       '未': ['己','丁','乙'],
+  '申': ['庚','壬','戊'], '酉': ['庚','辛'],
+  '戌': ['戊','辛','丁'], '亥': ['壬','甲'],
+}
+
+// ── 陰陽区分 ─────────────────────────────────────────────────────────────────
+const YANG_STEMS = ['甲','丙','戊','庚','壬']
+
+// ── 通変星（陰陽考慮） ────────────────────────────────────────────────────────
+export function getTenGodName(dayMaster: string, target: string): string {
+  if (!target || !dayMaster) return '不明'
+  if (dayMaster === target) return '比肩'
+  const dmIdx  = TIANGAN.indexOf(dayMaster)
+  const tgIdx  = TIANGAN.indexOf(target)
+  if (dmIdx < 0 || tgIdx < 0) return '不明'
+  const dmElem = TG_ELEM[dmIdx]
+  const tgElem = TG_ELEM[tgIdx]
+  const dmYang = YANG_STEMS.includes(dayMaster)
+  const tgYang = YANG_STEMS.includes(target)
+  const same   = dmYang === tgYang
+  if (dmElem === tgElem)                       return same ? '比肩' : '劫財'
+  if (SHENG_PRE[dmElem] === tgElem)            return same ? '食神' : '傷官'
+  if (KE_PRE[dmElem] === tgElem)               return same ? '偏財' : '正財'
+  if (KEYED_BY_PRE[dmElem] === tgElem)         return same ? '偏官' : '正官'
+  if (BORN_BY_PRE[dmElem] === tgElem)          return same ? '偏印' : '印綬'
+  return '不明'
+}
+
+// getTenGodName は SHENG/KE/KEYED_BY/BORN_BY が下で定義されるため、
+// ここに先行定義（後のブロックと同値・前方参照用）
+const SHENG_PRE:    Record<string,string> = { wood:'fire', fire:'earth', earth:'metal', metal:'water', water:'wood' }
+const KE_PRE:       Record<string,string> = { wood:'earth', earth:'water', water:'fire', fire:'metal', metal:'wood' }
+const KEYED_BY_PRE: Record<string,string> = { wood:'metal', fire:'water', earth:'wood', metal:'fire', water:'earth' }
+const BORN_BY_PRE:  Record<string,string> = { wood:'water', fire:'wood', earth:'fire', metal:'earth', water:'metal' }
+
+// ── 十二運テーブル ────────────────────────────────────────────────────────────
+// 各配列: 子(0)〜亥(11) の順
+const TWELVE_STATES: Record<string, string[]> = {
+  '甲': ['沐浴','冠帯','建禄','帝旺','衰','病','死','墓','絶','胎','養','長生'],
+  '乙': ['病','衰','帝旺','建禄','冠帯','沐浴','長生','養','胎','絶','墓','死'],
+  '丙': ['胎','養','長生','沐浴','冠帯','建禄','帝旺','衰','病','死','墓','絶'],
+  '丁': ['絶','墓','死','病','衰','帝旺','建禄','冠帯','沐浴','長生','養','胎'],
+  '戊': ['胎','養','長生','沐浴','冠帯','建禄','帝旺','衰','病','死','墓','絶'],
+  '己': ['絶','墓','死','病','衰','帝旺','建禄','冠帯','沐浴','長生','養','胎'],
+  '庚': ['死','墓','絶','胎','養','長生','沐浴','冠帯','建禄','帝旺','衰','病'],
+  '辛': ['長生','養','胎','絶','墓','死','病','衰','帝旺','建禄','冠帯','沐浴'],
+  '壬': ['帝旺','衰','病','死','墓','絶','胎','養','長生','沐浴','冠帯','建禄'],
+  '癸': ['建禄','冠帯','沐浴','長生','養','胎','絶','墓','死','病','衰','帝旺'],
+}
+const DIZHI_INDEX: Record<string, number> = {
+  '子':0,'丑':1,'寅':2,'卯':3,'辰':4,'巳':5,'午':6,'未':7,'申':8,'酉':9,'戌':10,'亥':11
+}
+const TWELVE_POWER: Record<string, number> = {
+  '長生':4,'沐浴':2,'冠帯':4,'建禄':5,'帝旺':5,
+  '衰':3,'病':2,'死':1,'墓':2,'絶':2,'胎':2,'養':3,
+}
+export function getTwelveState(dayMaster: string, dizhi: string): { name: string; power: number; stars: string } {
+  const states = TWELVE_STATES[dayMaster]
+  if (!states) return { name: '不明', power: 0, stars: '☆☆☆☆☆' }
+  const name  = states[DIZHI_INDEX[dizhi] ?? 0]
+  const power = TWELVE_POWER[name] ?? 0
+  return { name, power, stars: '★'.repeat(power) + '☆'.repeat(5 - power) }
+}
+
+// ── 空亡 ──────────────────────────────────────────────────────────────────────
+export function getKuuBou(dayKan: string, dayShi: string): string[] {
+  const kanIdx = TIANGAN.indexOf(dayKan)
+  const shiIdx = DIZHI.indexOf(dayShi)
+  const jun    = ((shiIdx - kanIdx) % 12 + 12) % 12
+  return [DIZHI[(jun + 10) % 12], DIZHI[(jun + 11) % 12]]
+}
+
+// ── 納音テーブル ──────────────────────────────────────────────────────────────
+const NAYIN: Record<string, string> = {
+  '甲子乙丑':'海中の金', '丙寅丁卯':'炉中の火',
+  '戊辰己巳':'大林の木', '庚午辛未':'路傍の土',
+  '壬申癸酉':'剣鋒の金', '甲戌乙亥':'山頭の火',
+  '丙子丁丑':'澗下の水', '戊寅己卯':'城頭の土',
+  '庚辰辛巳':'白蝋の金', '壬午癸未':'楊柳の木',
+  '甲申乙酉':'泉中の水', '丙戌丁亥':'屋上の土',
+  '戊子己丑':'霹靂の火', '庚寅辛卯':'松柏の木',
+  '壬辰癸巳':'長流の水', '甲午乙未':'砂中の金',
+  '丙申丁酉':'山下の火', '戊戌己亥':'平地の木',
+  '庚子辛丑':'壁上の土', '壬寅癸卯':'金箔の金',
+  '甲辰乙巳':'覆灯の火', '丙午丁未':'天河の水',
+  '戊申己酉':'大駅の土', '庚戌辛亥':'釵釧の金',
+  '壬子癸丑':'桑柘の木', '甲寅乙卯':'大渓の水',
+  '丙辰丁巳':'沙中の土', '戊午己未':'天上の火',
+  '庚申辛酉':'石榴の木', '壬戌癸亥':'大海の水',
+}
+export function getNayin(kan: string, shi: string): string {
+  const ki = TIANGAN.indexOf(kan)
+  const si = DIZHI.indexOf(shi)
+  const pk = ki % 2 === 0 ? ki : ki - 1
+  const ps = si % 2 === 0 ? si : si - 1
+  const key = `${TIANGAN[pk]}${DIZHI[ps]}${TIANGAN[pk + 1]}${DIZHI[ps + 1]}`
+  return NAYIN[key] ?? '不明'
+}
+
+// ── 特殊星テーブル ────────────────────────────────────────────────────────────
+const TIANYI_GUIREN: Record<string, string[]> = {
+  '甲':['丑','未'],'乙':['子','申'],'丙':['亥','酉'],'丁':['亥','酉'],
+  '戊':['丑','未'],'己':['子','申'],'庚':['丑','未'],'辛':['寅','午'],
+  '壬':['卯','巳'],'癸':['卯','巳'],
+}
+const TIANDE_GUIREN: Record<string, string> = {
+  '寅':'丁','卯':'申','辰':'壬','巳':'辛','午':'亥','未':'甲',
+  '申':'癸','酉':'寅','戌':'丙','亥':'乙','子':'巳','丑':'庚',
+}
+const YUEDE_GUIREN: Record<string, string> = {
+  '寅':'丙','卯':'甲','辰':'壬','巳':'庚','午':'丙','未':'甲',
+  '申':'壬','酉':'庚','戌':'丙','亥':'甲','子':'壬','丑':'庚',
+}
+const YIMA: Record<string, string> = {
+  '申':'寅','子':'寅','辰':'寅','寅':'申','午':'申','戌':'申',
+  '亥':'巳','卯':'巳','未':'巳','巳':'亥','酉':'亥','丑':'亥',
+}
+const BOUSHIN: Record<string, string> = {
+  '申':'亥','子':'亥','辰':'亥','寅':'巳','午':'巳','戌':'巳',
+  '亥':'寅','卯':'寅','未':'寅','巳':'申','酉':'申','丑':'申',
+}
+export function getSpecialStars(result: BaziResult): Record<string, string[]> {
+  const tianyiList = TIANYI_GUIREN[result.dayKan] ?? []
+  const tiande  = TIANDE_GUIREN[result.monthShi]
+  const yuede   = YUEDE_GUIREN[result.monthShi]
+  const yima    = YIMA[result.dayShi]
+  const boushin = BOUSHIN[result.dayShi]
+  const kuubou  = result.kuuBou
+
+  const check = (kan: string, shi: string): string[] => {
+    const s: string[] = []
+    if (tianyiList.includes(shi) || tianyiList.includes(kan)) s.push('天乙貴人')
+    if (tiande && (kan === tiande || shi === tiande)) s.push('天徳貴人')
+    if (yuede  && (kan === yuede  || shi === yuede))  s.push('月徳貴人')
+    if (yima   && shi === yima)    s.push('驛馬')
+    if (boushin && shi === boushin) s.push('亡神')
+    if (kuubou.includes(shi))      s.push('空亡')
+    return s
+  }
+  return {
+    yearPillar:  check(result.yearKan,  result.yearShi),
+    monthPillar: check(result.monthKan, result.monthShi),
+    dayPillar:   check(result.dayKan,   result.dayShi),
+    hourPillar:  check(result.hourKan,  result.hourShi),
+  }
+}
+
 export function calculateBazi(birthDate: Date, birthHour = 12): BaziResult {
+
   const year  = birthDate.getFullYear()
   const month = birthDate.getMonth() + 1
 
@@ -253,7 +424,10 @@ export function calculateBazi(birthDate: Date, birthHour = 12): BaziResult {
     TG_ELEM[hKanIdx], DZ_ELEM[hShiIdx],
   ].forEach(e => wuxingCount[e]++)
 
-  return {
+  const dm = TIANGAN[dKanIdx]
+  const kuuBou = getKuuBou(dm, DIZHI[dShiIdx])
+
+  const baseResult = {
     yearKan:  TIANGAN[yKanIdx], yearShi:  DIZHI[yShiIdx],
     yearKanElem: TG_ELEM[yKanIdx], yearShiElem: DZ_ELEM[yShiIdx],
     monthKan: TIANGAN[mKanIdx], monthShi: DIZHI[mShiIdx],
@@ -262,12 +436,44 @@ export function calculateBazi(birthDate: Date, birthHour = 12): BaziResult {
     dayKanElem: TG_ELEM[dKanIdx], dayShiElem: DZ_ELEM[dShiIdx],
     hourKan:  TIANGAN[hKanIdx], hourShi:  DIZHI[hShiIdx],
     hourKanElem: TG_ELEM[hKanIdx], hourShiElem: DZ_ELEM[hShiIdx],
-    dayMaster:        TIANGAN[dKanIdx],
+    dayMaster:        dm,
     dayMasterElement: TG_ELEM[dKanIdx],
-    dayMasterName:    DM_INFO[TIANGAN[dKanIdx]] ?? '',
+    dayMasterName:    DM_INFO[dm] ?? '',
     wuxingCount,
+    // 蔵干
+    yearZangGan:  ZANG_GAN[DIZHI[yShiIdx]] ?? [],
+    monthZangGan: ZANG_GAN[DIZHI[mShiIdx]] ?? [],
+    dayZangGan:   ZANG_GAN[DIZHI[dShiIdx]] ?? [],
+    hourZangGan:  ZANG_GAN[DIZHI[hShiIdx]] ?? [],
+    // 通変星（天干）
+    yearKanTenGod:  getTenGodName(dm, TIANGAN[yKanIdx]),
+    monthKanTenGod: getTenGodName(dm, TIANGAN[mKanIdx]),
+    hourKanTenGod:  getTenGodName(dm, TIANGAN[hKanIdx]),
+    // 通変星（地支・本気）
+    yearShiTenGod:  getTenGodName(dm, (ZANG_GAN[DIZHI[yShiIdx]] ?? [])[0] ?? ''),
+    monthShiTenGod: getTenGodName(dm, (ZANG_GAN[DIZHI[mShiIdx]] ?? [])[0] ?? ''),
+    dayShiTenGod:   getTenGodName(dm, (ZANG_GAN[DIZHI[dShiIdx]] ?? [])[0] ?? ''),
+    hourShiTenGod:  getTenGodName(dm, (ZANG_GAN[DIZHI[hShiIdx]] ?? [])[0] ?? ''),
+    // 十二運
+    yearTwelve:  getTwelveState(dm, DIZHI[yShiIdx]),
+    monthTwelve: getTwelveState(dm, DIZHI[mShiIdx]),
+    dayTwelve:   getTwelveState(dm, DIZHI[dShiIdx]),
+    hourTwelve:  getTwelveState(dm, DIZHI[hShiIdx]),
+    // 空亡
+    kuuBou,
+    // 納音
+    yearNayin:  getNayin(TIANGAN[yKanIdx], DIZHI[yShiIdx]),
+    monthNayin: getNayin(TIANGAN[mKanIdx], DIZHI[mShiIdx]),
+    dayNayin:   getNayin(TIANGAN[dKanIdx], DIZHI[dShiIdx]),
+    hourNayin:  getNayin(TIANGAN[hKanIdx], DIZHI[hShiIdx]),
+    // 特殊星（空亡込みで後計算）
+    specialStars: {} as Record<string, string[]>,
   }
+  // 特殊星は kuuBou が必要なので後から計算
+  baseResult.specialStars = getSpecialStars(baseResult)
+  return baseResult
 }
+
 
 // ── 十神（日主との関係） ────────────────────────────────────────────────────
 const SHENG: Record<string, string> = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' }
