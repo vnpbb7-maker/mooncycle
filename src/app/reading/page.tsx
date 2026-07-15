@@ -367,6 +367,7 @@ function ReadingPageInner() {
   const [upsellMsg, setUpsellMsg] = useState<string | null>(null)
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0)
   const [readyPhase, setReadyPhase] = useState(false)
+  const [question, setQuestion] = useState('')
 
   const READING_LOADING_MESSAGES = [
     t('reading.loading_msg1'),
@@ -542,6 +543,7 @@ function ReadingPageInner() {
           extraHint,
           locale,
           bazi: baziInfo,
+          question: question.trim(),
         }),
       })
       if (!res.ok || !res.body) throw new Error('stream failed')
@@ -681,6 +683,45 @@ function ReadingPageInner() {
                   animation: 'moonPulse 3s ease-in-out infinite',
                 }}>
                   {moon?.phaseEmoji ?? '\u{1F319}'}
+                </div>
+
+                {/* 問題文入力 */}
+                <div style={{ marginBottom: '24px', textAlign: 'left' }}>
+                  <div style={{
+                    fontSize: '11px',
+                    color: C.goldDim,
+                    marginBottom: '8px',
+                    letterSpacing: '0.06em',
+                    fontFamily: C.sans,
+                  }}>
+                    {isZhTW
+                      ? '請在心中默想你的問題（選填）'
+                      : '占いたいことを心に思い浮かべてください（任意）'}
+                  </div>
+                  <textarea
+                    value={question}
+                    onChange={e => setQuestion(e.target.value)}
+                    placeholder={isZhTW
+                      ? '例：他是不是真的喜歡我？工作上的選擇該怎麼辦？'
+                      : '例：彼との関係について。仕事の選択について。'}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(196,160,96,0.05)',
+                      border: '0.5px solid rgba(196,160,96,0.2)',
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      fontSize: '13px',
+                      color: '#c8b88a',
+                      fontFamily: C.serif,
+                      resize: 'none',
+                      outline: 'none',
+                      lineHeight: 1.7,
+                      minHeight: '80px',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={e => { e.target.style.borderColor = C.gold }}
+                    onBlur={e =>  { e.target.style.borderColor = 'rgba(196,160,96,0.2)' }}
+                  />
                 </div>
 
                 {/* 儀式テキスト */}
