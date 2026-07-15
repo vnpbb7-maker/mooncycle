@@ -29,11 +29,14 @@ export interface MoonPhaseData {
 
 // ── 定数 ───────────────────────────────────────────────────────────────────
 
-/** 2000年1月6日 18:14 UTC を新月の基準点とする */
-const BASE_NEW_MOON = new Date('2000-01-06T18:14:00Z')
+/**
+ * 2026-07-14 10:57 UTC の新月を基準点とする
+ * （Star Walk で照明 0.9%、月齢 0.89 日と一致確認済み）
+ */
+const BASE_NEW_MOON = new Date('2026-07-14T10:57:00Z')
 
 /** 朔望月（新月→新月）の日数 */
-const SYNODIC_MONTH = 29.530589
+const SYNODIC_MONTH = 29.530588853
 
 /** 月が1日に進む黄道経度 */
 const MOON_DAILY_MOTION = 13.176
