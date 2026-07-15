@@ -559,7 +559,7 @@ function ReadingPageInner() {
     } finally {
       setIsGenerating(false)
     }
-  }, [selectedSpread, moon, drawnCards, isSmallTable, isGrandTableau, isZhTW, locale, POSITIONS])
+  }, [selectedSpread, moon, drawnCards, isSmallTable, isGrandTableau, isZhTW, locale, POSITIONS, question])
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: C.bg, color: C.goldLt }}>
