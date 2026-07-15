@@ -16,6 +16,7 @@ import {
   incrementAiReadingCount,
   getSubscription,
 } from '@/lib/subscription'
+import { calculateBazi } from '@/lib/bazi'
 
 const C = {
   bg: '#1a1508', bgCard: '#1e1a08', bgDeep: '#120f05',
@@ -516,6 +517,18 @@ function ReadingPageInner() {
     }
 
     try {
+      // localStorage から命式情報を取得
+      let baziInfo = null
+      try {
+        const profileStr = localStorage.getItem('mooncycle_profile')
+        const profile = profileStr ? JSON.parse(profileStr) : null
+        if (profile?.birthDate) {
+          const birth = new Date(profile.birthDate)
+          const hour = profile.birthHour ?? 12
+          baziInfo = calculateBazi(birth, hour)
+        }
+      } catch { /* ignore */ }
+
       const positions = POSITIONS[selectedSpread.id] ?? []
       const res = await fetch('/api/reading', {
         method: 'POST',
@@ -528,6 +541,7 @@ function ReadingPageInner() {
           moonSign: moon.moonSign,
           extraHint,
           locale,
+          bazi: baziInfo,
         }),
       })
       if (!res.ok || !res.body) throw new Error('stream failed')

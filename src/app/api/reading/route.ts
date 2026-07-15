@@ -2,9 +2,16 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
 
+// BaziResult の最小型（読み取り専用）
+type BaziInfo = {
+  dayKan: string
+  dayMasterName: string
+  wuxingCount: { wood: number; fire: number; earth: number; metal: number; water: number }
+} | null
+
 export async function POST(req: Request) {
   try {
-    const { cards, positions, spreadName, moonPhase, moonSign, extraHint, locale } = await req.json() as {
+    const { cards, positions, spreadName, moonPhase, moonSign, extraHint, locale, bazi } = await req.json() as {
       cards:      { name: string; keyword: string }[]
       positions:  string[]
       spreadName: string
@@ -12,11 +19,40 @@ export async function POST(req: Request) {
       moonSign:   string
       extraHint?: string
       locale?:    string
+      bazi?:      BaziInfo
     }
 
     const isZh = locale === 'zh-TW'
 
-    const systemPrompt = isZh
+    // ── 命式コンテキスト ─────────────────────────────────────────────────────
+    const baziContext: string = bazi
+      ? isZh
+        ? `
+
+【用戶命盤資訊】
+日主：${bazi.dayKan}（${bazi.dayMasterName}）
+五行：木${bazi.wuxingCount.wood} 火${bazi.wuxingCount.fire} 土${bazi.wuxingCount.earth} 金${bazi.wuxingCount.metal} 水${bazi.wuxingCount.water}
+2026年流年：丙午年
+
+請在解讀牌卡時，將用戶的日主特質融入分析：
+- 日主的五行屬性影響牌卡的解讀角度
+- 用神（最少的五行）方向的牌卡對此人特別重要
+- 以日主的性格特質（${bazi.dayMasterName}）來詮釋牌卡的具體建議`
+        : `
+
+【命式情報】
+日主：${bazi.dayKan}（${bazi.dayMasterName}）
+五行：木${bazi.wuxingCount.wood} 火${bazi.wuxingCount.fire} 土${bazi.wuxingCount.earth} 金${bazi.wuxingCount.metal} 水${bazi.wuxingCount.water}
+2026年流年：丙午年
+
+カードを読む際、必ず命式を考慮してください：
+- 日主の五行の性質でカードの意味を色づける
+- 用神（最も少ない五行）方向のカードを特に重視
+- 日主の本質（${bazi.dayMasterName}）の視点から具体的アドバイスを`
+      : ''
+
+    // ── システムプロンプト ────────────────────────────────────────────────────
+    const systemPrompt = (isZh
       ? `你是雷諾曼牌和月亮能量的專家。請完全用繁體中文提供解讀。
 必須按照以下結構，確保每個部分都寫完整：
 
@@ -47,8 +83,9 @@ export async function POST(req: Request) {
 各カードの解説は3〜4文で完結させてください。
 
 ## 今日のあなたへ
-全体をまとめる締めくくりのメッセージ（100字程度）`
+全体をまとめる締めくくりのメッセージ（100字程度）`) + baziContext
 
+    // ── ユーザープロンプト ────────────────────────────────────────────────────
     const userPrompt = isZh
       ? `牌陣：${spreadName}
 月相：${moonPhase} ／ 月亮星座：${moonSign}

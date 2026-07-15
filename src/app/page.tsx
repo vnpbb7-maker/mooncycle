@@ -12,6 +12,8 @@ import type { MoonPhase, MoonPhaseData } from '@/lib/moon-phase'
 import { LENORMAND_CARDS } from '@/lib/cards'
 import type { LenormandCard } from '@/lib/cards'
 import { useLocale } from '@/lib/i18n'
+import { calculateBazi, getYongShen } from '@/lib/bazi'
+import type { BaziResult } from '@/lib/bazi'
 
 // ── パレット定数 ───────────────────────────────────────────────────────────
 const C = {
@@ -520,11 +522,13 @@ function CardItem({
   index,
   position,
   locale,
+  badge,
 }: {
   card: LenormandCard
   index: number
   position: { label: string; desc: string }
   locale: string
+  badge?: { label: string; color: string } | null
 }) {
   const [imgError, setImgError] = useState(false)
   const [imgLoaded, setImgLoaded] = useState(false)
@@ -563,6 +567,22 @@ function CardItem({
             : '0 4px 12px rgba(0,0,0,0.3)',
         }}
       >
+        {/* 用神/忌神バッジ */}
+        {badge && (
+          <div style={{
+            position: 'absolute', top: '6px', left: '50%',
+            transform: 'translateX(-50%)',
+            fontSize: '9px', color: badge.color,
+            background: 'rgba(26,21,8,0.88)',
+            padding: '2px 7px', borderRadius: '99px',
+            border: `0.5px solid ${badge.color}`,
+            whiteSpace: 'nowrap', zIndex: 10,
+            fontFamily: C.sans, letterSpacing: '0.03em',
+            pointerEvents: 'none',
+          }}>
+            {badge.label}
+          </div>
+        )}
         {/* next/image (画像がある場合) */}
         {!imgError && (
           <Image
@@ -763,13 +783,61 @@ function LenormandSection() {
   )
 }
 
+// ── 五行×カード対応マップ ──────────────────────────────────────────────────
+const CARD_ELEMENT: Record<number, string> = {
+  // wood: 成長・希望・始まり系
+  5: 'wood', 9: 'wood', 13: 'wood', 17: 'wood', 20: 'wood',
+  // fire: 情熱・表現・成功系
+  31: 'fire', 16: 'fire', 24: 'fire',
+  // earth: 安定・家・基盤系
+  4: 'earth', 15: 'earth', 19: 'earth', 35: 'earth',
+  // metal: 決断・切断・収穫系
+  10: 'metal', 33: 'metal', 25: 'metal',
+  // water: 直感・変容・流れ系
+  32: 'water', 3: 'water', 34: 'water', 7: 'water',
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // TodayCards セクション
 // ═══════════════════════════════════════════════════════════════════════════
 
 function TodayCardsSection({ cards }: { cards: LenormandCard[] }) {
   const { t, locale } = useLocale()
-  const DAILY_POSITIONS = locale === 'zh-TW' ? DAILY_POSITIONS_ZH : DAILY_POSITIONS_JA
+  const isZh = locale === 'zh-TW'
+  const DAILY_POSITIONS = isZh ? DAILY_POSITIONS_ZH : DAILY_POSITIONS_JA
+
+  // 命式（localStorage から取得）
+  const [baziForCards, setBaziForCards] = useState<BaziResult | null>(null)
+  useEffect(() => {
+    try {
+      const profileStr = localStorage.getItem('mooncycle_profile')
+      if (profileStr) {
+        const profile = JSON.parse(profileStr)
+        if (profile?.birthDate) {
+          const birth = new Date(profile.birthDate)
+          setBaziForCards(calculateBazi(birth, profile.birthHour ?? 12))
+        }
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  // 用神・忌神バッジ判定
+  const getCardBadge = (cardId: number): { label: string; color: string } | null => {
+    if (!baziForCards) return null
+    const cardElem = CARD_ELEMENT[cardId]
+    if (!cardElem) return null
+    const { yongShenElem, jiShenElem } = getYongShen(baziForCards)
+    if (cardElem === yongShenElem) return {
+      label: isZh ? '✦ 今日特別重要' : '✦ 今日特に重要',
+      color: '#c4a060',
+    }
+    if (cardElem === jiShenElem) return {
+      label: isZh ? '△ 注意' : '△ 注意',
+      color: '#c06060',
+    }
+    return null
+  }
+
   return (
     <section
       id="deck"
@@ -811,6 +879,7 @@ function TodayCardsSection({ cards }: { cards: LenormandCard[] }) {
             index={i}
             locale={locale}
             position={DAILY_POSITIONS[i] ?? { label: '', desc: '' }}
+            badge={getCardBadge(card.id)}
           />
         ))}
       </div>
